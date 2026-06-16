@@ -10,6 +10,20 @@ import static utils.ScannerUtil.loadRows;
 import static utils.StringUtil.normalize;
 
 public final class WordTrainerGame {
+    private static final String SOURCE_FILE_NAME = "words-learning.csv";
+    private static final String FAILED_FILE_NAME = "words-failed.csv";
+
+    private enum SessionMode {
+        NEW_WORDS_LEARNING(false),
+        FAILED_WORDS_LEARNING(true);
+
+        private final boolean deleteFailedFileWhenNoFailed;
+
+        SessionMode(boolean deleteFailedFileWhenNoFailed) {
+            this.deleteFailedFileWhenNoFailed = deleteFailedFileWhenNoFailed;
+        }
+    }
+
     public enum Mode {
         DUTCH_TO_ENGLISH("Dutch", "English", "word", WordRow::dutchWord, WordRow::englishWord, false),
         ENGLISH_TO_DUTCH("English", "Dutch", "word", WordRow::englishWord, WordRow::dutchWord, false),
@@ -44,20 +58,30 @@ public final class WordTrainerGame {
 
     }
 
-    public static void playFromConsole(String sourceFileName, String failedFileName) throws Exception {
+    public static void playFromConsole() throws Exception {
         try (var scanner = new Scanner(System.in)) {
+            var sessionMode = askSessionMode(scanner);
             var mode = askMode(scanner);
-            play(mode, sourceFileName, failedFileName, scanner);
+            var selectedSourceFileName = sessionMode == SessionMode.NEW_WORDS_LEARNING
+                    ? SOURCE_FILE_NAME
+                    : FAILED_FILE_NAME;
+
+            play(mode, selectedSourceFileName, sessionMode.deleteFailedFileWhenNoFailed, scanner);
         }
     }
 
-    public static void play(Mode mode, String sourceFileName, String failedFileName) throws Exception {
+    public static void play(Mode mode) throws Exception {
         try (var scanner = new Scanner(System.in)) {
-            play(mode, sourceFileName, failedFileName, scanner);
+            play(mode, SOURCE_FILE_NAME, false, scanner);
         }
     }
 
-    private static void play(Mode mode, String sourceFileName, String failedFileName, Scanner scanner) throws Exception {
+    private static void play(
+            Mode mode,
+            String sourceFileName,
+            boolean deleteFailedFileWhenNoFailed,
+            Scanner scanner
+    ) throws Exception {
         var csvPath = Path.of("resources/" + sourceFileName);
         if (!Files.exists(csvPath)) {
             System.out.println("CSV file not found: " + csvPath.toAbsolutePath());
@@ -108,10 +132,32 @@ public final class WordTrainerGame {
 
         System.out.printf("%nDone. Score: %d/%d correct.%n", correct, rows.size());
 
+        var failedCsvPath = Path.of("resources/" + FAILED_FILE_NAME);
         if (!failedRows.isEmpty()) {
-            var failedCsvPath = Path.of("resources/" + failedFileName);
             Files.writeString(failedCsvPath, String.join(System.lineSeparator(), failedRows));
             System.out.println("Failed rows saved to: " + failedCsvPath.toAbsolutePath());
+        } else if (deleteFailedFileWhenNoFailed && Files.exists(failedCsvPath)) {
+            Files.delete(failedCsvPath);
+            System.out.println("No failed rows left. Deleted: " + failedCsvPath.toAbsolutePath());
+        }
+    }
+
+    private static SessionMode askSessionMode(Scanner scanner) {
+        while (true) {
+            System.out.println("Choose source mode:");
+            System.out.println("1) NEW_WORDS_LEARNING");
+            System.out.println("2) FAILED_WORDS_LEARNING");
+            System.out.print("Enter number: ");
+
+            var input = scanner.nextLine().trim();
+            if ("1".equals(input)) {
+                return SessionMode.NEW_WORDS_LEARNING;
+            }
+            if ("2".equals(input)) {
+                return SessionMode.FAILED_WORDS_LEARNING;
+            }
+
+            System.out.println("Invalid choice. Try again.");
         }
     }
 
