@@ -11,24 +11,32 @@ import static utils.StringUtil.normalize;
 
 public final class WordTrainerGame {
     public enum Mode {
-        DUTCH_TO_ENGLISH("Dutch", "English", WordRow::dutchWord, WordRow::englishWord),
-        ENGLISH_TO_DUTCH("English", "Dutch", WordRow::englishWord, WordRow::dutchWord);
+        DUTCH_TO_ENGLISH("Dutch", "English", "word", WordRow::dutchWord, WordRow::englishWord, false),
+        ENGLISH_TO_DUTCH("English", "Dutch", "word", WordRow::englishWord, WordRow::dutchWord, false),
+        PHRASE_DUTCH_TO_ENGLISH("Dutch", "English", "phrase", WordRow::dutchPhrase, WordRow::englishPhrase, true),
+        PHRASE_ENGLISH_TO_DUTCH("English", "Dutch", "phrase", WordRow::englishPhrase, WordRow::dutchPhrase, true);
 
         private final String promptLanguage;
         private final String answerLanguage;
+        private final String promptUnit;
         private final java.util.function.Function<WordRow, String> promptWord;
         private final java.util.function.Function<WordRow, String> expectedWord;
+        private final boolean phraseMode;
 
         Mode(
                 String promptLanguage,
                 String answerLanguage,
+                String promptUnit,
                 java.util.function.Function<WordRow, String> promptWord,
-                java.util.function.Function<WordRow, String> expectedWord
+                java.util.function.Function<WordRow, String> expectedWord,
+                boolean phraseMode
         ) {
             this.promptLanguage = promptLanguage;
             this.answerLanguage = answerLanguage;
+            this.promptUnit = promptUnit;
             this.promptWord = promptWord;
             this.expectedWord = expectedWord;
+            this.phraseMode = phraseMode;
         }
     }
 
@@ -67,8 +75,9 @@ public final class WordTrainerGame {
                 var prompt = mode.promptWord.apply(row);
                 var expected = mode.expectedWord.apply(row);
 
-                System.out.printf("%n[%d/%d] %s word: %s%n", i + 1, rows.size(), mode.promptLanguage, prompt);
-                System.out.printf("%s translation: ", mode.answerLanguage);
+                System.out.printf("%n[%d/%d] %s %s: %s%n", i + 1, rows.size(), mode.promptLanguage, mode.promptUnit, prompt);
+                var answerUnit = mode.phraseMode ? "phrase" : "translation";
+                System.out.printf("%s %s: ", mode.answerLanguage, answerUnit);
                 var answer = scanner.nextLine().trim();
 
                 if (normalize(answer).equals(normalize(expected))) {
@@ -79,8 +88,10 @@ public final class WordTrainerGame {
                     System.out.println("Failed (correct: " + expected + ")");
                 }
 
-                System.out.println("Dutch phrase  : " + row.dutchPhrase());
-                System.out.println("English phrase: " + row.englishPhrase());
+                if (!mode.phraseMode) {
+                    System.out.println("Dutch phrase  : " + row.dutchPhrase());
+                    System.out.println("English phrase: " + row.englishPhrase());
+                }
             }
 
             System.out.printf("%nDone. Score: %d/%d correct.%n", correct, rows.size());
@@ -91,4 +102,3 @@ public final class WordTrainerGame {
         }
     }
 }
-
