@@ -84,7 +84,11 @@ public final class WordTrainerGame {
     ) throws Exception {
         var csvPath = Path.of("resources/" + sourceFileName);
         if (!Files.exists(csvPath)) {
-            System.out.println("CSV file not found: " + csvPath.toAbsolutePath());
+            if (FAILED_FILE_NAME.equals(sourceFileName)) {
+                System.out.println("There are no failed words to train right now. Nice progress - keep going with new words!");
+            } else {
+                System.out.println("CSV file not found: " + csvPath.toAbsolutePath());
+            }
             return;
         }
 
