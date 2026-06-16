@@ -42,20 +42,20 @@ public final class ScannerUtil {
 
     public static LineRange askLineRange(Scanner scanner, int maxLine) {
         while (true) {
-            System.out.printf("Enter line range (example 2-10, max line %d): ", maxLine);
+            System.out.printf("Enter line range (example 1-10, max line %d): ", maxLine);
             var input = scanner.nextLine().trim();
             var matcher = RANGE.matcher(input);
 
             if (!matcher.matches()) {
-                System.out.println("Invalid format. Use start-end, for example 2-10.");
+                System.out.println("Invalid format. Use start-end, for example 1-10.");
                 continue;
             }
 
             var from = Integer.parseInt(matcher.group(1));
             var to = Integer.parseInt(matcher.group(2));
 
-            if (from < 2 || to < 2 || from > to || to > maxLine) {
-                System.out.println("Invalid bounds. Data rows start at line 2.");
+            if (from < 1 || to < 1 || from > to || to > maxLine) {
+                System.out.println("Invalid bounds. Data rows start at line 1.");
                 continue;
             }
 

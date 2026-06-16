@@ -1,3 +1,3 @@
 void main() throws Exception {
-    Game2.play();
+    WordTrainerGame.play(WordTrainerGame.Mode.DUTCH_TO_ENGLISH, "words-failed.csv", "words-failed2.csv");
 }
