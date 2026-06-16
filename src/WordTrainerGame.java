@@ -94,8 +94,14 @@ public final class WordTrainerGame {
             return;
         }
 
-        var range = askLineRange(scanner, lines.size());
-        var rows = loadRows(lines, range.from(), range.to());
+        var isFailedWordsLearning = FAILED_FILE_NAME.equals(sourceFileName);
+        ArrayList<WordRow> rows;
+        if (isFailedWordsLearning) {
+            rows = new ArrayList<>(loadRows(lines, 1, lines.size()));
+        } else {
+            var range = askLineRange(scanner, lines.size());
+            rows = new ArrayList<>(loadRows(lines, range.from(), range.to()));
+        }
 
         if (rows.isEmpty()) {
             System.out.println("No valid rows found in that range.");
