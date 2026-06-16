@@ -145,10 +145,10 @@ public final class WordTrainerGame {
         var failedCsvPath = Path.of("resources/" + FAILED_FILE_NAME);
         if (!failedRows.isEmpty()) {
             Files.writeString(failedCsvPath, String.join(System.lineSeparator(), failedRows));
-            System.out.println("Failed rows saved to: " + failedCsvPath.toAbsolutePath());
+            System.out.println("Failed rows saved, you can train them now.");
         } else if (deleteFailedFileWhenNoFailed && Files.exists(failedCsvPath)) {
             Files.delete(failedCsvPath);
-            System.out.println("No failed rows left. Deleted: " + failedCsvPath.toAbsolutePath());
+            System.out.println("No failed rows left. Go to next level or words.");
         }
     }
 
