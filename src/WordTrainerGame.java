@@ -44,7 +44,20 @@ public final class WordTrainerGame {
 
     }
 
+    public static void playFromConsole(String sourceFileName, String failedFileName) throws Exception {
+        try (var scanner = new Scanner(System.in)) {
+            var mode = askMode(scanner);
+            play(mode, sourceFileName, failedFileName, scanner);
+        }
+    }
+
     public static void play(Mode mode, String sourceFileName, String failedFileName) throws Exception {
+        try (var scanner = new Scanner(System.in)) {
+            play(mode, sourceFileName, failedFileName, scanner);
+        }
+    }
+
+    private static void play(Mode mode, String sourceFileName, String failedFileName, Scanner scanner) throws Exception {
         var csvPath = Path.of("resources/" + sourceFileName);
         if (!Files.exists(csvPath)) {
             System.out.println("CSV file not found: " + csvPath.toAbsolutePath());
@@ -57,48 +70,78 @@ public final class WordTrainerGame {
             return;
         }
 
-        try (var scanner = new Scanner(System.in)) {
-            var range = askLineRange(scanner, lines.size());
-            var rows = loadRows(lines, range.from(), range.to());
+        var range = askLineRange(scanner, lines.size());
+        var rows = loadRows(lines, range.from(), range.to());
 
-            if (rows.isEmpty()) {
-                System.out.println("No valid rows found in that range.");
-                return;
+        if (rows.isEmpty()) {
+            System.out.println("No valid rows found in that range.");
+            return;
+        }
+
+        System.out.printf("%nLoaded %d row(s). Let's train!%n", rows.size());
+
+        var correct = 0;
+        var failedRows = new ArrayList<String>();
+        for (var i = 0; i < rows.size(); i++) {
+            var row = rows.get(i);
+            var prompt = mode.promptWord.apply(row);
+            var expected = mode.expectedWord.apply(row);
+
+            System.out.printf("%n[%d/%d] %s %s: %s%n", i + 1, rows.size(), mode.promptLanguage, mode.promptUnit, prompt);
+            var answerUnit = mode.phraseMode ? "phrase" : "translation";
+            System.out.printf("%s %s: ", mode.answerLanguage, answerUnit);
+            var answer = scanner.nextLine().trim();
+
+            if (normalize(answer).equals(normalize(expected))) {
+                correct++;
+                System.out.println("Success");
+            } else {
+                failedRows.add(lines.get(row.lineNumber() - 1));
+                System.out.println("Failed (correct: " + expected + ")");
             }
 
-            System.out.printf("%nLoaded %d row(s). Let's train!%n", rows.size());
-
-            var correct = 0;
-            var failedRows = new ArrayList<String>();
-            for (var i = 0; i < rows.size(); i++) {
-                var row = rows.get(i);
-                var prompt = mode.promptWord.apply(row);
-                var expected = mode.expectedWord.apply(row);
-
-                System.out.printf("%n[%d/%d] %s %s: %s%n", i + 1, rows.size(), mode.promptLanguage, mode.promptUnit, prompt);
-                var answerUnit = mode.phraseMode ? "phrase" : "translation";
-                System.out.printf("%s %s: ", mode.answerLanguage, answerUnit);
-                var answer = scanner.nextLine().trim();
-
-                if (normalize(answer).equals(normalize(expected))) {
-                    correct++;
-                    System.out.println("Success");
-                } else {
-                    failedRows.add(lines.get(row.lineNumber() - 1));
-                    System.out.println("Failed (correct: " + expected + ")");
-                }
-
-                if (!mode.phraseMode) {
-                    System.out.println("Dutch phrase  : " + row.dutchPhrase());
-                    System.out.println("English phrase: " + row.englishPhrase());
-                }
+            if (!mode.phraseMode) {
+                System.out.println("Dutch phrase  : " + row.dutchPhrase());
+                System.out.println("English phrase: " + row.englishPhrase());
             }
+        }
 
-            System.out.printf("%nDone. Score: %d/%d correct.%n", correct, rows.size());
+        System.out.printf("%nDone. Score: %d/%d correct.%n", correct, rows.size());
 
+        if (!failedRows.isEmpty()) {
             var failedCsvPath = Path.of("resources/" + failedFileName);
             Files.writeString(failedCsvPath, String.join(System.lineSeparator(), failedRows));
             System.out.println("Failed rows saved to: " + failedCsvPath.toAbsolutePath());
+        }
+    }
+
+    private static Mode askMode(Scanner scanner) {
+        var modes = Mode.values();
+        while (true) {
+            System.out.println("Choose training mode:");
+            for (var i = 0; i < modes.length; i++) {
+                var mode = modes[i];
+                System.out.printf("%d) %s %s -> %s %s%n",
+                        i + 1,
+                        mode.promptLanguage,
+                        mode.promptUnit,
+                        mode.answerLanguage,
+                        mode.promptUnit
+                );
+            }
+            System.out.print("Enter number: ");
+            var input = scanner.nextLine().trim();
+
+            try {
+                var choice = Integer.parseInt(input);
+                if (choice >= 1 && choice <= modes.length) {
+                    return modes[choice - 1];
+                }
+            } catch (NumberFormatException ignored) {
+                // Keep asking until a valid numeric option is entered.
+            }
+
+            System.out.println("Invalid choice. Try again.");
         }
     }
 }
