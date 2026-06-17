@@ -126,7 +126,7 @@ public final class WordTrainerGame {
             System.out.printf("%s %s: ", mode.answerLanguage, answerUnit);
             var answer = scanner.nextLine().trim();
 
-            if (normalize(answer).equals(normalize(expected))) {
+            if (normalize(answer).equalsIgnoreCase(normalize(expected))) {
                 correct++;
                 System.out.println("Success");
             } else {
